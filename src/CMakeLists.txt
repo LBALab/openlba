@@ -36,5 +36,9 @@ endif ()
 find_package(SDL2 REQUIRED)
 
 # Process the targets
+add_subdirectory(LIB386/v1)
+add_subdirectory(GAMES/LBA1)
+add_subdirectory(LIB386/v2)
+add_subdirectory(GAMES/TIME)
 add_subdirectory(LIB386/v3)
 add_subdirectory(GAMES/LBA2)

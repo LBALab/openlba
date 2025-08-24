@@ -1,3 +1,5 @@
+#include "../LIB_SYS/ADELINE.H"
+
 #define	NORMAL_UNIT	64
 
 #define	INFO_TRI	1

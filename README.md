@@ -8,6 +8,16 @@ Little Big Adventure (aka Relentless: Twinsen's Adventure) is an action-adventur
 Time Commando is a 1996 action-adventure not part of the LBA series but sharing the same engine utilities.
 Little Big Adventure 2 (aka Twinsen's Odyssey) is the sequel released in 1997.
 
+## Build
+
+> cmake -S src -B build
+
+> cmake --build build --target lba1
+> cmake --build build --target lba2
+
+Eventually once we have lba1 and lba2 working separately we can try to build a single target for both as openlba.
+
+
 ## Links:
 **Official Website:** https://littlebigadventure.com/
 

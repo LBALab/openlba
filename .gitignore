@@ -15,4 +15,5 @@ LIB386/v3/3D/Makefile
 Makefile
 CMakeCache.txt
 *.a
-GAMES/LBA2/lba2
+lba2
+.DS_Store
