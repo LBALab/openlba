@@ -1,0 +1,9 @@
+/cmake-build-*
+/.idea/
+CMakeUserPresets.json
+out/
+*.LIB
+*.OBJ
+*.ERR
+SOURCES/LBA0.EXE
+tags
