@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(LBA2)
+project(openlba)
 
 # Bruteforce setup of UASM assembly compiler (must happen before enable_language)
 set(CMAKE_ASM_MASM_COMPILER uasm)

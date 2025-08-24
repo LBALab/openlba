@@ -7,3 +7,12 @@ out/
 *.ERR
 SOURCES/LBA0.EXE
 tags
+CMakeFiles
+GAMES/LBA2/3DEXT/cmake_install.cmake
+*.cmake
+GAMES/LBA2/Makefile
+LIB386/v3/3D/Makefile
+Makefile
+CMakeCache.txt
+*.a
+GAMES/LBA2/lba2

@@ -25,7 +25,7 @@ if (WIN32)
     target_link_libraries(lba2 PRIVATE gdi32 user32 ddraw winmm kernel32)
 endif ()
 
-target_include_directories(lba2 PRIVATE ../LIB386/H)
+target_include_directories(lba2 PRIVATE ../../LIB386/v3/H)
 target_compile_definitions(lba2 PRIVATE ONE_GAME_DIRECTORY LBA_GAME CDROM
         $<$<STREQUAL:MVIDEO_BACKEND,smacker>:USE_MVIDEO_SMACKER>
         $<$<STREQUAL:MVIDEO_BACKEND,none>:USE_MVIDEO_NONE>)
