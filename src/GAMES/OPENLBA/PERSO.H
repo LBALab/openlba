@@ -2,6 +2,7 @@
 #define	PERSO_H
 
 #if defined(DEBUG_TOOLS) || defined(TEST_TOOLS)
+extern void Convert640x480to768x480(U8 *screen);
 /*--------------------------------------------------------------------------*/
 extern void AffDebugMenu(void);
 /*--------------------------------------------------------------------------*/

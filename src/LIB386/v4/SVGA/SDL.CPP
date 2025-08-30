@@ -252,6 +252,10 @@ void HandleEventsVideo(const void *event) {
   }
 }
 
+void Delay() {
+  SDL_Delay(1);
+}
+
 // =============================================================================
 #ifdef __cplusplus
 }

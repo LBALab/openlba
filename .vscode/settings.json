@@ -17,6 +17,11 @@
         "GLOBAL.C": "cpp",
         "HOLOMAP.C": "cpp",
         "PERSO.C": "cpp",
-        "INITADEL.C": "cpp"
+        "INITADEL.C": "cpp",
+        "HQ_RESS.C": "cpp",
+        "S_MOUSE.C": "cpp",
+        "bitset": "cpp",
+        "unordered_map": "cpp",
+        "__locale": "cpp"
     }
 }

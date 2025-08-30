@@ -32,6 +32,8 @@ void CopyVideoArea(void *dst, const void *src, const U32 tabOffDst[],
 
 void HandleEventsVideo(const void *event);
 
+void Delay();
+
 // -----------------------------------------------------------------------------
 #define Palette(Pal) SetVideoPalette(Pal, 0, 256)
 #define PalOne(col, r, g, b) SetVideoPaletteCol(col, r, g, b)

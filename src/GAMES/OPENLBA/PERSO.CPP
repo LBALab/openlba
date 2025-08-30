@@ -33,6 +33,7 @@ S32     EscTimer ;
 char    NamePcxSave[ADELINE_MAX_PATH] ;
 S32     NumPcxSave = 0 ;
 
+
 #if defined(DEBUG_TOOLS)||defined(TEST_TOOLS)
 /*══════════════════════════════════════════════════════════════════════════*/
 
@@ -508,7 +509,7 @@ startloop:
 
                                         BoxReset() ;    // pas de flip
 
-                                        ZoomSavedGame( 240, 10 ) ;
+                                        ZoomSavedGame( 288, 10 ) ;
 
                                         FlagFade = FALSE ;
                                         RestartRainSample = TRUE ;
@@ -939,7 +940,7 @@ startloop:
 
                                 BoxReset() ;    // pas de flip
 
-                                ZoomSavedGame( 240, 10 ) ;
+                                ZoomSavedGame( 288, 10 ) ;
 
                                 FlagFade = FALSE ;
                                 RestartRainSample = TRUE ;
@@ -2193,7 +2194,8 @@ int main(int argc, char *argv[])
 	{
 		// pour Windows car ca prend du temps a scaner le CD
 		GetResPath(tmpFilePath, ADELINE_MAX_PATH, SCREEN_HQR_NAME);
-		Load_HQR( tmpFilePath, Log, PCR_CDROM ) ;
+		Load_HQR( tmpFilePath, Screen, PCR_CDROM ) ;
+        CopyScreenResized((U8 *)Screen, (U8 *)Log, 0);
 		BoxStaticFullflip() ;
 
 		// premiere fois

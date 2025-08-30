@@ -24,6 +24,7 @@ bool CreateScreenMemory(U32 resX, U32 resY);
 
 // -----------------------------------------------------------------------------
 #define CopyScreen(src, dst) FastCopy(dst, src, ModeDesiredX *ModeDesiredY)
+#define CopyScreenResized(src, dst, col) CopyScreenColour(src, dst, col)
 
 // =============================================================================
 #ifdef __cplusplus
