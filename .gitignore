@@ -17,3 +17,4 @@ CMakeCache.txt
 *.a
 lba2
 .DS_Store
+bin/
