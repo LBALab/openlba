@@ -18,3 +18,4 @@ CMakeCache.txt
 lba2
 .DS_Store
 bin/
+build/

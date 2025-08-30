@@ -7,6 +7,15 @@
         {
            "type": "lldb",
             "request": "launch",
+            "name": "Debug OpenLBA",
+            "program": "${workspaceFolder}/build/GAMES/OPENLBA/openlba",
+            "args": [],
+            "cwd": "${workspaceFolder}/build/GAMES/OPENLBA/",
+            "preLaunchTask": "build-openlba",
+        },
+        {
+           "type": "lldb",
+            "request": "launch",
             "name": "Debug LBA2",
             "program": "${workspaceFolder}/bin/lba2/lba2",
             "args": [],

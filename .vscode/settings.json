@@ -16,6 +16,7 @@
         "GAMEMENU.C": "cpp",
         "GLOBAL.C": "cpp",
         "HOLOMAP.C": "cpp",
-        "PERSO.C": "cpp"
+        "PERSO.C": "cpp",
+        "INITADEL.C": "cpp"
     }
 }
