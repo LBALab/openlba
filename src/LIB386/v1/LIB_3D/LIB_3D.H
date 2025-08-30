@@ -21,6 +21,45 @@
 #define	MAT_GOURAUD	9
 #define	MAT_DITHER	10
 
+#define NORMAL_UNIT 64
+
+#define INFO_TRI 	1
+#define INFO_ANIM 	2
+#define INFO_TORTUE 4
+
+#define E_LIGNE	 0
+#define E_POLY	 1
+#define E_SPHERE 2
+#define E_POINT	 3
+
+#define TYPE_ROTATE 	0
+#define TYPE_TRANSLATE 	1
+#define TYPE_ZOOM 		2
+
+#define TYPE_3D	 0
+#define TYPE_ISO 1
+
+#define T00 0
+#define T01 2
+#define T02 4
+#define T10 6
+#define T11 8
+#define T12 10
+#define T20 12
+#define T21 14
+#define T22 16
+
+#define LT00 0
+#define LT01 4
+#define LT02 8
+#define LT10 12
+#define LT11 16
+#define LT12 20
+#define LT20 24
+#define LT21 28
+#define LT22 32
+
+
 /* structures */
 
 typedef	struct {	WORD	X ;

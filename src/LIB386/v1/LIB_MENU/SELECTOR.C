@@ -1,14 +1,17 @@
-#include	"lib_sys\adeline.h"
-#include	"lib_sys\lib_sys.h"
-#include	"lib_svga\lib_svga.h"
-#include	"lib_menu\lib_menu.h"
+#include	"../LIB_SYS/ADELINE.H"
+#include	"../LIB_SYS/LIB_SYS.H"
+#include	"../LIB_SVGA/LIB_SVGA.H"
+
+#include	"LIB_MENU.H"
 
 #include	<stdio.h>
 #include	<stdlib.h>
+#include	<string.h>
+#ifdef DOS
 #include	<sys\types.h>
 #include	<direct.h>
-#include	<string.h>
 #include	<dos.h>
+#endif
 
 #ifndef	WATCOM9
 #include	<mem.h>

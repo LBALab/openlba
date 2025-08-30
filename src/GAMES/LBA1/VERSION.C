@@ -1,6 +1,6 @@
-#include 	"c_extern.h"
+#include 	"C_EXTERN.H"
 
-#include	<process.h>
+// #include	<process.h>
 
 #ifdef	DEMO
 char	*Version	= "LBA Demo ("

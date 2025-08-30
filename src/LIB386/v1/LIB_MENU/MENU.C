@@ -1,17 +1,20 @@
-#include	"lib_sys\adeline.h"
-#include	"lib_sys\lib_sys.h"
-#include	"lib_svga\lib_svga.h"
-
-#include	"lib_menu.h"
-
 #include	<stdlib.h>
 #include	<stdio.h>
 #include	<string.h>
-#include	<dos.h>
 
+#include	"../LIB_SYS/ADELINE.H"
+#include	"../LIB_SYS/LIB_SYS.H"
+#include	"../LIB_SVGA/LIB_SVGA.H"
+
+#include	"LIB_MENU.H"
+
+#ifdef DOS
+#include	<dos.h>
 #ifndef	WATCOM9
 #include	<mem.h>
 #endif
+#endif
+
 
 /*──────────────────────────────────────────────────────────────────────────*/
 /*──────────────────────────────────────────────────────────────────────────*/
@@ -458,7 +461,7 @@ T_CLICK_BOX	*AddHeaderButton(	T_MENU *ptrmenu,
 	if( Mshrink( ptrmenu->PtrMallocList, newsize ) == 0L )
 	{
 		ptr = (UBYTE*)ptrmenu->PtrMallocList ;
-		ptrmenu->PtrMallocList = Malloc( newsize ) ;
+		ptrmenu->PtrMallocList = (T_CLICK_BOX *)Malloc( newsize ) ;
 		memmove( ptrmenu->PtrMallocList, ptr, newsize-sizeof(T_CLICK_BOX) ) ;
 		Free( ptr ) ;
 	}
@@ -554,7 +557,7 @@ void	AddChangeValue(	T_MENU	*ptrmenu,
 
 	ptrlcb->Handle = handle ;
 	ptrlcb->Flags = FLAG_CENTRE | flags ;
-	ptrlcb->PtrString = "-" ;
+	ptrlcb->PtrString = (unsigned char *)'-';
 	ptrlcb->Type = TYPE_DEC_VALUE ;
 	ptrlcb->PtrVar = ptrvar ;
 	ptrlcb->Mask = minvar ;
@@ -564,7 +567,7 @@ void	AddChangeValue(	T_MENU	*ptrmenu,
 
 	ptrlcb->Handle = handle ;
 	ptrlcb->Flags = FLAG_CENTRE | flags ;
-	ptrlcb->PtrString = "+" ;
+	ptrlcb->PtrString = (unsigned char *)'+';
 	ptrlcb->Type = TYPE_INC_VALUE ;
 	ptrlcb->PtrVar = ptrvar ;
 	ptrlcb->Mask = maxvar ;
@@ -628,7 +631,7 @@ void	AddWindow(	T_MENU	*ptrmenu,
 
 	ptrlcb->Handle = handle ;
 	ptrlcb->Flags = flags ;
-	ptrlcb->PtrString = "" ;
+	ptrlcb->PtrString = (unsigned char *)'';
 	ptrlcb->Type = TYPE_WINDOW ;
 }
 
@@ -996,9 +999,9 @@ LONG	GereMenu( T_MENU *ptrmenu )
 					}
 					else		/* input value */
 					{
-						memostring = ptrlcb->PtrString ;
+						memostring = (char *)ptrlcb->PtrString ;
 						itoa( value, InputValueString, 10 ) ;
-						ptrlcb->PtrString = InputValueString ;
+						ptrlcb->PtrString = (unsigned char *)InputValueString ;
 						ptrlcb->Type = TYPE_TEXT ;
 						DrawBox( ptrmenu, select, FLAG_PUSHED, TRUE ) ;
 						InputString( ptrmenu, ptrlcb->Handle , 63 ) ;
@@ -1007,7 +1010,7 @@ LONG	GereMenu( T_MENU *ptrmenu )
 						if( ivalue > vmax ) ivalue = vmax ;
 						*(ptrlcb->PtrVar) = ivalue ;
 						ptrlcb->Type = TYPE_CHANGE_VALUE ;
-						ptrlcb->PtrString = memostring ;
+						ptrlcb->PtrString = (unsigned char *)memostring ;
 					}
 					DrawBox( ptrmenu, select, NO_FLAG, TRUE ) ;
 					break ;

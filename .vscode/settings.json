@@ -2,6 +2,20 @@
     "files.associations": {
         "LIB_3D.H": "cpp",
         "ADELINE.C": "cpp",
-        "DEF_FILE.C": "cpp"
+        "DEF_FILE.C": "cpp",
+        "TIMER.C": "cpp",
+        "MENU.C": "cpp",
+        "DIVERS.C": "cpp",
+        "DLLLOAD.C": "cpp",
+        "MENUFUNC.C": "cpp",
+        "SELECTOR.C": "cpp",
+        "INCLUDE.C": "cpp",
+        "MIDI.C": "cpp",
+        "MIXER.C": "cpp",
+        "VERSION.C": "cpp",
+        "GAMEMENU.C": "cpp",
+        "GLOBAL.C": "cpp",
+        "HOLOMAP.C": "cpp",
+        "PERSO.C": "cpp"
     }
 }

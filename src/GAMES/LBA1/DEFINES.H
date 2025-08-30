@@ -1,3 +1,5 @@
+#include "../../LIB386/v1/LIB_SYS/ADELINE.H"
+
 /*══════════════════════════════════════════════════════════════════════════*
 		   █▀▀▀▄ █▀▀▀▀ █▀▀▀▀  █    ██▄ █ █▀▀▀▀ ██▀▀▀
 		   ██  █ ██▀▀  ██▀▀   ██   ██▀██ ██▀▀  ▀▀▀▀█
@@ -53,8 +55,10 @@
 
 #include	<stdlib.h>
 #include	<string.h>
+#ifdef	OS_DOS
 #include	<dos.h>
 #include	<conio.h>
+#endif
 #include	<stdio.h>
 
 #include 	"lib_sys\adeline.h"
@@ -66,7 +70,8 @@
 #include 	"lib_midi\lib_midi.h"
 #include 	"lib_cd\lib_cd.h"
 
-#include 	"common.h"
+
+#include 	"COMMON.H"
 
 /*---------------- macros ------------------*/
 

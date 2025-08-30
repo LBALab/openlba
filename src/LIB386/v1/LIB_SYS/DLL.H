@@ -10,7 +10,7 @@
 //
 
 #ifdef __HIGHC__
-#define cdecl _CC(_REVERSE_PARMS | _NEAR_CALL)
+// #define cdecl _CC(_REVERSE_PARMS | _NEAR_CALL)
 #pragma Global_aliasing_convention("_%r");
 #endif
 
@@ -52,18 +52,18 @@ extern "C" {
 #define DLLMEM_USER  2     // *dll -> output memory block alloc'd by user
 #define DLLMEM_ALLOC 4     // *dll = don't care; allocate & return output mem
 
-ULONG cdecl DLL_size(void *source, ULONG flags);
-void * cdecl DLL_load(void *source, ULONG flags, void *dll);
+ULONG DLL_size(void *source, ULONG flags);
+void * DLL_load(void *source, ULONG flags, void *dll);
 
 //
 // File functions
 //
 
-LONG cdecl FILE_error(void);
-LONG cdecl FILE_size(BYTE *filename);
-void * cdecl FILE_read(BYTE *filename, void *dest);
-LONG cdecl FILE_write(BYTE *filename, void *buf, ULONG len);
-LONG cdecl FILE_append(BYTE *filename, void *buf, ULONG len);
+LONG FILE_error(void);
+LONG FILE_size(BYTE *filename);
+void * FILE_read(BYTE *filename, void *dest);
+LONG FILE_write(BYTE *filename, void *buf, ULONG len);
+LONG FILE_append(BYTE *filename, void *buf, ULONG len);
 
 #ifdef __cplusplus
 }

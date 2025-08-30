@@ -1,6 +1,8 @@
-#include 	"c_extern.h"
+#include 	"C_EXTERN.h"
 
+#ifdef OS_DOS
 #include	<process.h>
+#endif
 
 extern	char	*Version ;
 

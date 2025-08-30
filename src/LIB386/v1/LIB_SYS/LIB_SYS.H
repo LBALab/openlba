@@ -4,8 +4,9 @@
 		██▀▄  ██▀▀  ██▀   ██▀▀█ ██  █ ██▀▀█ ██▀█▀ ██  █
 		▀▀  ▀ ▀▀▀▀▀ ▀▀    ▀▀▀▀▀ ▀▀▀▀▀ ▀▀  ▀ ▀▀  ▀ ▀▀▀▀
  *══════════════════════════════════════════════════════════════════════════*/
-#include	"lib_sys\dll.h"
-#include "stdio.h"
+#include 	<stdio.h>
+
+#include	"DLL.H"
 
 extern	volatile	UWORD	Key	;	/* scan code keyboard */
 

@@ -3,11 +3,11 @@
 ;				LIB_SYS.ASH
 ;-----------------------------------------------------------------------------
 
-		extrn	NoLanguage	TimerRef:DWORD
-		extrn	NoLanguage	NbFramePerSecond:WORD
-		extrn	NoLanguage	WaitNbTicks:WORD
-		extrn	NoLanguage	CmptFrame:WORD
-		extrn	NoLanguage	Cmpt_18:WORD
+		extrn	SYSCALL	TimerRef:DWORD
+		extrn	SYSCALL	NbFramePerSecond:WORD
+		extrn	SYSCALL	WaitNbTicks:WORD
+		extrn	SYSCALL	CmptFrame:WORD
+		extrn	SYSCALL	Cmpt_18:WORD
 
 ;TIMERREF		equ	0
 ;NBFRAMEPERSECOND      	equ	4
