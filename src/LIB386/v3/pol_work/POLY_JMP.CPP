@@ -92,25 +92,12 @@ S32 Jmp_SolidFog(S32 Nb_Points, Struc_Point *Ptr_Points, U16 color)
 
 S32 Jmp_TrameFog(S32 Nb_Points, Struc_Point *Ptr_Points, U16 color)
 {
-	/*
-Jmp_TrameFog		PROC
-			mov	bl,[Fill_Logical_Palette+ebx]
-			mov	eax,Offset Filler_Trame
-			mov	[Fill_Color],ebx
+  Fill_Filler = Filler_Trame;
+  Fill_ClipFlag = CLIP_FLAT;
+  Fill_Color.Num = Fill_Logical_Palette[color & 0xFF];
+  Fill_Trame_Parity = 0;
 
-			mov	[Fill_Filler],eax
-			mov	edx,CLIP_FLAT
-
-			mov	[Fill_ClipFlag],edx
-			xor	eax,eax
-
-			mov	[Fill_Trame_Parity],eax
-			jmp	Fill_PolyClip
-Jmp_TrameFog		ENDP
-	*/
-    // TODO: Implement ASM
-    printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-		return 0;
+  return Fill_PolyClip(Nb_Points, Ptr_Points);
 }
 
 S32 Jmp_SolidZBuf(S32 Nb_Points, Struc_Point *Ptr_Points, U16 color)

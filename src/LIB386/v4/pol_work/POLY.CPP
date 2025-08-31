@@ -93,6 +93,8 @@ U8 Fill_Flag_Fog = FALSE;     // True if FOG active
 U8 Fill_Flag_ZBuffer = FALSE;	// True if ZBUFFER is active
 U8 Fill_Flag_NZW = FALSE;     // True if NZW active
 
+S32 Fill_Trame_Parity = 0;  ///< Parity for trame polygons
+
 Fill_Jump_Fn *Fill_Saut_Normal = Fill_N_Table_Jumps; // Filler table
 
 // -----------------------------------------------------------------------------

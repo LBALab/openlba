@@ -158,6 +158,8 @@ extern U8 Fill_Flag_Fog;        ///< True if FOG is active
 extern U8 Fill_Flag_ZBuffer;    ///< True if ZBUFFER is active
 extern U8 Fill_Flag_NZW;        ///< True if NZW is active
 
+extern S32 Fill_Trame_Parity;  ///< Parity for trame polygons
+
 extern U8 Fill_Logical_Palette[256];
 
 // -----------------------------------------------------------------------------
