@@ -1033,7 +1033,7 @@ S32 Sphere(U32 typePoly, void *poly)
 
   S32 z = 0;
 
-  if (Fill_Flag_ZBuffer && TypeProj != TYPE_3D)
+  if (Fill_Flag_ZBuffer && TypeProj == TYPE_3D)
   {
     T_OBJ_POINT rotatedP1 = Obj_ListRotatedPoints[sphere->P1];
     z = (Fill_ZBuffer_Factor * (~rotatedP1.Z - PosZWr)) >> 16;
