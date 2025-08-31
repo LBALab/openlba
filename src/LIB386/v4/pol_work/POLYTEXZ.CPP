@@ -110,58 +110,1198 @@ void Fill_Loop_Perspective(U32 fillWidth)
 
 S32 Filler_TextureZ(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrCLUT = Fill_Color.Ptr;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    POLYTEXZ_RepMask2 = RepMask;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        U64 addW = ((U64)factor * (U64)Fill_W_XSlope);
+        U32 addWDec = (U32)(addW >> 32);
+        U32 addWInt = (U32)(addW & 0xFFFFFFFF);
+        addWDec = addWDec << 16;
+        addWInt = addWInt >> 16;
+        addWDec |= addWInt;
+        Fill_Cur_W = Fill_CurWMin + addWDec;
+
+        U64 addU = ((U64)factor * (U64)Fill_MapU_XSlope);
+        U32 addUDec = (U32)(addU >> 32);
+        U32 addUInt = (U32)(addU & 0xFFFFFFFF);
+        addUDec = addUDec << 16;
+        addUInt = addUInt >> 16;
+        addUDec |= addUInt;
+        lineU += addUDec;
+
+        U64 addV = ((U64)factor * (U64)Fill_MapV_XSlope);
+        U32 addVDec = (U32)(addV >> 32);
+        U32 addVInt = (U32)(addV & 0xFFFFFFFF);
+        addVDec = addVDec << 16;
+        addVInt = addVInt >> 16;
+        addVInt |= addVDec;
+        lineV += addVInt;
+      }
+
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1) {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 incMapU = Fill_Next_MapU - Fill_Cur_MapU;
+        incMapU = ((S32)incMapU) >> PERSP_SHIFT;
+
+        U32 incMapV = Fill_Next_MapV - Fill_Cur_MapV;
+        incMapV = ((S32)incMapV) >> PERSP_SHIFT;
+
+        U32 incV_incU = (incMapV << 16) | (incMapU & 0xFFFF);
+        U32 mapV_mapU = (Fill_Cur_MapV << 16) | (Fill_Cur_MapU & 0xFFFF);
+
+        U32 mapIndex = mapV_mapU >> 16;
+        mapIndex = (mapIndex & 0xFFFFFF00) | ((mapV_mapU >> 8) & 0xFF);
+        mapIndex &= RepMask;
+
+        U32 lineWidth = fillWidth;
+
+        if (fillWidth > PERSP_VALUE)
+        {
+          fillWidth = PERSP_VALUE;
+        }
+
+        do
+        {
+          mapIndex = (mapIndex & 0xFFFFFF00) | POLYTEXZ_PtrMapPatch[mapIndex];
+          mapV_mapU += incV_incU;
+          mapIndex &= 0xFF;
+
+          mapIndex = (mapIndex & 0xFFFFFF00) | POLYTEXZ_PtrCLUT[mapIndex];
+          POLYTEXZ_PtrLog[offset] = mapIndex & 0xFF;
+
+          mapIndex = mapV_mapU >> 16;
+          mapIndex = (mapIndex & 0xFFFFFF00) | ((mapV_mapU >> 8) & 0xFF);
+
+          offset++;
+          mapIndex &= POLYTEXZ_RepMaskPatch;
+          fillWidth--;
+        }
+        while (fillWidth);
+
+        if (lineWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+
+        if (lineWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        fillWidth = lineWidth - PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZFlat(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrCLUT = Fill_Color.Ptr;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        if (fillWidth > PERSP_VALUE)
+        {
+          // Process PERSP_VALUE pixels
+          for (U32 i = 0; i < PERSP_VALUE; i++)
+          {
+            U32 texelAddr = ((mapCoord >> 16) & RepMask);
+            U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+            U8 color = POLYTEXZ_PtrCLUT[texel];
+            line[i] = color;
+            mapCoord += mapInc;
+          }
+          line += PERSP_VALUE;
+        }
+        else
+        {
+          // Process remaining pixels
+          for (U32 i = 0; i < fillWidth; i++)
+          {
+            U32 texelAddr = ((mapCoord >> 16) & POLYTEXZ_RepMaskPatch);
+            U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+            U8 color = POLYTEXZ_PtrCLUT[texel];
+            line[i] = color;
+            mapCoord += mapInc;
+          }
+        }
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZChromaKey(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        // Process pixels with chroma key transparency
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          U32 texelAddr = ((mapCoord >> 16) & RepMask);
+          U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+          
+          // Chroma key test: only draw if texel is not 0 (transparent)
+          if (texel != 0)
+          {
+            line[i] = texel;
+          }
+          
+          mapCoord += mapInc;
+        }
+
+        line += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZFlatChromaKey(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrCLUT = Fill_Color.Ptr;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    POLYTEXZ_RepMask2 = RepMask;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        if (fillWidth > PERSP_VALUE)
+        {
+          // Process PERSP_VALUE pixels with flat shading and chroma key
+          for (U32 i = 0; i < PERSP_VALUE; i++)
+          {
+            U32 texelAddr = ((mapCoord >> 16) & RepMask);
+            U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+            
+            // Chroma key test: only draw if texel is not 0 (transparent)
+            if (texel != 0)
+            {
+              U8 color = POLYTEXZ_PtrCLUT[texel];
+              line[i] = color;
+            }
+            
+            mapCoord += mapInc;
+          }
+          line += PERSP_VALUE;
+        }
+        else
+        {
+          // Process remaining pixels with flat shading and chroma key
+          for (U32 i = 0; i < fillWidth; i++)
+          {
+            U32 texelAddr = ((mapCoord >> 16) & POLYTEXZ_RepMaskPatch);
+            U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+            
+            // Chroma key test: only draw if texel is not 0 (transparent)
+            if (texel != 0)
+            {
+              U8 color = POLYTEXZ_PtrCLUT[texel];
+              line[i] = color;
+            }
+            
+            mapCoord += mapInc;
+          }
+        }
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZFog(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_RepMaskPatch = RepMask;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        // Process pixels with fog effect
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          U32 texelAddr = ((mapCoord >> 16) & RepMask);
+          U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+          
+          // Apply fog effect using Fill_Logical_Palette
+          extern U8 Fill_Logical_Palette[256];
+          U8 foggedColor = Fill_Logical_Palette[texel];
+          line[i] = foggedColor;
+          
+          mapCoord += mapInc;
+        }
+
+        line += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZChromaKeyFog(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_RepMaskPatch = RepMask;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        // Process pixels with chroma key transparency and fog effect
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          U32 texelAddr = ((mapCoord >> 16) & RepMask);
+          U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+          
+          // Chroma key test: only draw if texel is not 0 (transparent)
+          if (texel != 0)
+          {
+            // Apply fog effect using Fill_Logical_Palette
+            extern U8 Fill_Logical_Palette[256];
+            U8 foggedColor = Fill_Logical_Palette[texel];
+            line[i] = foggedColor;
+          }
+          
+          mapCoord += mapInc;
+        }
+
+        line += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrZBufferPatch = PtrZBuffer;
+    POLYTEXZ_PtrZBuffer1 = PtrZBuffer;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_IntZBuf = (U32)Fill_ZBuf_XSlope >> 8;
+    POLYTEXZ_DecZBuf = (U32)Fill_ZBuf_XSlope << 24;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      // Convert line pointer to offset for Z-buffer operations
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        // Z-buffer values: split Fill_CurZBuf into integer and fractional parts
+        U32 zBufFrac = Fill_CurZBuf << 24;  // Fractional part
+        U32 zBufInt = Fill_CurZBuf >> 8;    // Integer part
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        // Process pixels with Z-buffer testing and writing
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          // Z-buffer test
+          if (POLYTEXZ_PtrZBufferPatch[offset + i] < (U16)zBufInt)
+          {
+            // Update Z-buffer
+            POLYTEXZ_PtrZBuffer1[offset + i] = (U16)zBufInt;
+            
+            // Sample texture
+            U32 texelAddr = ((mapCoord >> 16) & RepMask);
+            U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+            
+            // Write pixel to screen
+            POLYTEXZ_PtrLog[offset + i] = texel;
+          }
+          
+          mapCoord += mapInc;
+          
+          // Update Z-buffer values
+          zBufFrac += POLYTEXZ_DecZBuf;
+          zBufInt += POLYTEXZ_IntZBuf;
+          if (zBufFrac < POLYTEXZ_DecZBuf)  // Carry detection
+          {
+            zBufInt++;
+          }
+        }
+
+        line += currentWidth;
+        offset += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        
+        // Update Z-buffer for next chunk
+        U32 combinedZ = (zBufInt << 8) | (zBufFrac >> 24);
+        Fill_CurZBuf = combinedZ;
+        
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZChromaKeyZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrZBufferPatch = PtrZBuffer;
+    POLYTEXZ_PtrZBuffer1 = PtrZBuffer;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_IntZBuf = (U32)Fill_ZBuf_XSlope >> 8;
+    POLYTEXZ_DecZBuf = (U32)Fill_ZBuf_XSlope << 24;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      // Convert line pointer to offset for Z-buffer operations
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        // Z-buffer values: split Fill_CurZBuf into integer and fractional parts
+        U32 zBufFrac = Fill_CurZBuf << 24;  // Fractional part
+        U32 zBufInt = Fill_CurZBuf >> 8;    // Integer part
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        // Process pixels with chroma key transparency and Z-buffer testing
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          // Sample texture first
+          U32 texelAddr = ((mapCoord >> 16) & RepMask);
+          U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+          
+          // Chroma key test: only process if texel is not 0 (transparent)
+          if (texel != 0)
+          {
+            // Z-buffer test
+            if (POLYTEXZ_PtrZBufferPatch[offset + i] < (U16)zBufInt)
+            {
+              // Update Z-buffer
+              POLYTEXZ_PtrZBuffer1[offset + i] = (U16)zBufInt;
+              
+              // Write pixel to screen
+              POLYTEXZ_PtrLog[offset + i] = texel;
+            }
+          }
+          
+          mapCoord += mapInc;
+          
+          // Update Z-buffer values
+          zBufFrac += POLYTEXZ_DecZBuf;
+          zBufInt += POLYTEXZ_IntZBuf;
+          if (zBufFrac < POLYTEXZ_DecZBuf)  // Carry detection
+          {
+            zBufInt++;
+          }
+        }
+
+        line += currentWidth;
+        offset += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        
+        // Update Z-buffer for next chunk
+        U32 combinedZ = (zBufInt << 8) | (zBufFrac >> 24);
+        Fill_CurZBuf = combinedZ;
+        
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 // Verified against ASM (not properly tested)
@@ -1386,15 +2526,343 @@ S32 Filler_TextureZFlatChromaKeyNZW(U32 nbLines, U32 fillCurXMin, U32 fillCurXMa
 
 S32 Filler_TextureZFogNZW(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrZBufferPatch = PtrZBuffer;
+    POLYTEXZ_PtrZBuffer2 = PtrZBuffer;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_IntZBuf = (U32)Fill_ZBuf_XSlope >> 8;
+    POLYTEXZ_IntZBuf2 = (U32)Fill_ZBuf_XSlope >> 8;
+    POLYTEXZ_DecZBuf = (U32)Fill_ZBuf_XSlope << 24;
+    POLYTEXZ_DecZBuf2 = (U32)Fill_ZBuf_XSlope << 24;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    POLYTEXZ_RepMask2 = RepMask;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      // Convert line pointer to offset for Z-buffer operations
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        // Z-buffer values: split Fill_CurZBuf into integer and fractional parts
+        U32 zBufFrac = Fill_CurZBuf << 24;  // Fractional part
+        U32 zBufInt = Fill_CurZBuf >> 8;    // Integer part
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        // Process pixels with fog effects and Z-buffer testing (no Z-write)
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          // Z-buffer test (no Z-write for NZW variant)
+          if (POLYTEXZ_PtrZBufferPatch[offset + i] >= (U16)zBufInt)
+          {
+            // Sample texture
+            U32 texelAddr = ((mapCoord >> 16) & RepMask);
+            U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+            
+            // Apply fog effect using Fill_Logical_Palette
+            extern U8 Fill_Logical_Palette[256];
+            U8 foggedColor = Fill_Logical_Palette[texel];
+            
+            // Write pixel to screen (no Z-buffer update)
+            POLYTEXZ_PtrLog[offset + i] = foggedColor;
+          }
+          
+          mapCoord += mapInc;
+          
+          // Update Z-buffer values for interpolation
+          zBufFrac += POLYTEXZ_DecZBuf;
+          zBufInt += POLYTEXZ_IntZBuf;
+          if (zBufFrac < POLYTEXZ_DecZBuf)  // Carry detection
+          {
+            zBufInt++;
+          }
+        }
+
+        line += currentWidth;
+        offset += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        
+        // Update Z-buffer for next chunk
+        U32 combinedZ = (zBufInt << 8) | (zBufFrac >> 24);
+        Fill_CurZBuf = combinedZ;
+        
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZChromaKeyFogNZW(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrZBufferPatch = PtrZBuffer;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_IntZBuf = (U32)Fill_ZBuf_XSlope >> 8;
+    POLYTEXZ_DecZBuf = (U32)Fill_ZBuf_XSlope << 24;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+      Fill_Cur_W = Fill_CurWMin;
+
+      S32 lineU = u;
+      S32 lineV = v;
+
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        // Adjust for sub-pixel start position
+        S32 wAdjust = Fill_W_XSlope * factor;
+        Fill_Cur_W += (wAdjust >> 16);
+        
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        lineU += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        lineV += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      // Convert line pointer to offset for Z-buffer operations
+      U32 offset = line - (U8 *)Log;
+      Fill_Init_Perspective(lineU, lineV, fillWidth);
+
+      while (1)
+      {
+        Fill_Loop_Perspective(fillWidth);
+
+        U32 curMapU = Fill_Cur_MapU & 0xFFFF;
+        U32 nextMapU = Fill_Next_MapU & 0xFFFF;
+        U32 curMapV = (Fill_Cur_MapV >> 16) & 0xFFFF;
+        U32 nextMapV = (Fill_Next_MapV >> 16) & 0xFFFF;
+
+        S32 incMapU = (S32)(nextMapU - curMapU) >> PERSP_SHIFT;
+        S32 incMapV = (S32)(nextMapV - curMapV) >> PERSP_SHIFT;
+
+        U32 mapCoord = (curMapV << 16) | curMapU;
+        U32 mapInc = ((incMapV & 0xFFFF) << 16) | (incMapU & 0xFFFF);
+
+        // Z-buffer values: split Fill_CurZBuf into integer and fractional parts
+        U32 zBufFrac = Fill_CurZBuf << 24;  // Fractional part
+        U32 zBufInt = Fill_CurZBuf >> 8;    // Integer part
+
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+
+        // Process pixels with chroma key, fog effects and Z-buffer testing (no Z-write)
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          // Sample texture first
+          U32 texelAddr = ((mapCoord >> 16) & RepMask);
+          U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+          
+          // Chroma key test: only process if texel is not 0 (transparent)
+          if (texel != 0)
+          {
+            // Z-buffer test (no Z-write for NZW variant)
+            if (POLYTEXZ_PtrZBufferPatch[offset + i] >= (U16)zBufInt)
+            {
+              // Apply fog effect using Fill_Logical_Palette
+              extern U8 Fill_Logical_Palette[256];
+              U8 foggedColor = Fill_Logical_Palette[texel];
+              
+              // Write pixel to screen (no Z-buffer update)
+              POLYTEXZ_PtrLog[offset + i] = foggedColor;
+            }
+          }
+          
+          mapCoord += mapInc;
+          
+          // Update Z-buffer values for interpolation
+          zBufFrac += POLYTEXZ_DecZBuf;
+          zBufInt += POLYTEXZ_IntZBuf;
+          if (zBufFrac < POLYTEXZ_DecZBuf)  // Carry detection
+          {
+            zBufInt++;
+          }
+        }
+
+        line += currentWidth;
+        offset += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        
+        // Update Z-buffer for next chunk
+        U32 combinedZ = (zBufInt << 8) | (zBufFrac >> 24);
+        Fill_CurZBuf = combinedZ;
+        
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
