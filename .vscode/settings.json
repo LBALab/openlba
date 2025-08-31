@@ -22,6 +22,8 @@
         "S_MOUSE.C": "cpp",
         "bitset": "cpp",
         "unordered_map": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "GRILLE.C": "cpp",
+        "*.def": "cpp"
     }
 }

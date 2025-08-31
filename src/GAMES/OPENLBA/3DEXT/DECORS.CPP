@@ -1,4 +1,5 @@
 #include "DEFINES.H"
+#include <MENU/MENULIB.H>
 
 /*══════════════════════════════════════════════════════════════════════════*
 		      █▀▀▀▄ █▀▀▀▀ █▀▀▀▀ █▀▀▀█ █▀▀▀█ ██▀▀▀
@@ -32,7 +33,7 @@ extern	S32	FlagMasque ;
 /*══════════════════════════════════════════════════════════════════════════*/
 // affiche les objets de decors
 
-#ifdef	LBA_EDITOR	// uniquement PERSO
+// #ifdef	LBA_EDITOR	// uniquement PERSO
 extern	void	ClearScreenMinMax() ;
 extern	void	AdjustScreenMinMax() ;
 
@@ -120,7 +121,7 @@ void	AffZVObjet( T_DECORS *ptrobj )
 			ptrobj->XMin, ptrobj->YMin, ptrobj->ZMin,
 			ptrobj->XMax, ptrobj->YMax, ptrobj->ZMax	) ;
 }
-#endif
+// #endif
 
 
 /*══════════════════════════════════════════════════════════════════════════*/
@@ -239,7 +240,7 @@ pas_rec_sur_x:
 
 /*══════════════════════════════════════════════════════════════════════════*/
 
-#ifdef	LBA_EDITOR
+// #ifdef	LBA_EDITOR
 void	AffichageObjetDecorsZV( void )
 {
 	S32 i ;
@@ -262,7 +263,7 @@ void	AffichageObjetDecorsZV( void )
 
 	UnsetClip() ;
 }
-#endif
+// #endif
 
 /*══════════════════════════════════════════════════════════════════════════*/
 

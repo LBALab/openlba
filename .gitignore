@@ -15,7 +15,6 @@ LIB386/v3/3D/Makefile
 Makefile
 CMakeCache.txt
 *.a
-lba2
 .DS_Store
 bin/
 build/
