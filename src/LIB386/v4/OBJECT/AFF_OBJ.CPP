@@ -1697,9 +1697,6 @@ S32 BodyDisplay(S32 x, S32 y, S32 z, S32 alpha, S32 beta, S32 gamma,
 S32 BodyDisplay_AlphaBeta(S32 x, S32 y, S32 z, S32 alpha, S32 beta,
                                  S32 gamma, void *obj)
 {
-	// TODO: Implement ASM
-	printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-
 	lBody = (T_BODY_HEADER *)obj;
 	ScreenXMin = 0x7FFFFFFF; // Init 2D box
 	ScreenYMin = 0x7FFFFFFF;

@@ -1132,7 +1132,7 @@ S32 Filler_TextureZFlatNZW(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 
           // @@Disp:
           mapIndex = (mapIndex & 0xFFFFFF00) | POLYTEXZ_PtrMapPatch[mapIndex];
-          mapV_mapU + incV_incU;
+          mapV_mapU += incV_incU;
           mapIndex &= 0xFF;
 
           mapIndex = (mapIndex & 0xFFFFFF00) | POLYTEXZ_PtrCLUT[mapIndex];
