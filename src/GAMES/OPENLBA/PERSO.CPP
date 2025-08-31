@@ -278,7 +278,7 @@ void    InitGame( int argc )
 /*-------------------------------------------------------------------------*/
 /* init FIRST scene files */
 
-        NewCube = 0 ;
+        NewCube = 76 ;
         NumCube = -1 ;
 
         FlagTheEnd = -1 ;

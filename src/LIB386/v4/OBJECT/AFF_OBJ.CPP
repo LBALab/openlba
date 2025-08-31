@@ -717,9 +717,62 @@ S32 Quad_Texture_Gouraud(U32 typePoly, void *poly)
 // ***********************
 S32 Triangle_TextureZ_Solid(U32 typePoly, void *poly)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  STRUC_POLY3_TEXTURE *poly3 = (STRUC_POLY3_TEXTURE *)poly;
+  
+  // Extract polygon type and vertex indices
+  typePoly >>= 2;
+  U16 p1 = poly3->P1;
+  U16 p2 = poly3->P2;
+  U16 p3 = poly3->P3;
+  
+  // Setup Z-buffer information for the 3 vertices
+  GetZO3(ListFillPoly, p1, p2, p3);
+  
+  // Set screen coordinates for all 3 vertices
+  ListFillPoly[0].Pt_XE = Obj_ListProjectedPoints[p1].X;
+  ListFillPoly[0].Pt_YE = Obj_ListProjectedPoints[p1].Y;
+  ListFillPoly[1].Pt_XE = Obj_ListProjectedPoints[p2].X;
+  ListFillPoly[1].Pt_YE = Obj_ListProjectedPoints[p2].Y;
+  ListFillPoly[2].Pt_XE = Obj_ListProjectedPoints[p3].X;
+  ListFillPoly[2].Pt_YE = Obj_ListProjectedPoints[p3].Y;
+  
+  // Extract texture handle from high word of P3 and setup texture info
+  U32 textureHandle = (poly3->P3 >> 16) & ~3; // Clear bottom 2 bits
+  U32 textureInfo = PtrTextures[textureHandle >> 2];
+  RepMask = textureInfo >> 16;
+  PtrMap = ObjPtrMap + (textureInfo & 0xFFFF);
+  
+  // Set texture coordinates (U,V) for all 3 vertices
+  ListFillPoly[0].Pt_MapU = poly3->U1;
+  ListFillPoly[0].Pt_MapV = poly3->V1;
+  ListFillPoly[1].Pt_MapU = poly3->U2;
+  ListFillPoly[1].Pt_MapV = poly3->V2;
+  ListFillPoly[2].Pt_MapU = poly3->U3;
+  ListFillPoly[2].Pt_MapV = poly3->V3;
+  
+  // Calculate perspective correction values (W) for each vertex
+  // W = W_NORM / (Z + PosZWr) where Z is the rotated Z coordinate
+  S32 z1 = Obj_ListRotatedPoints[p1].Z;
+  S32 z2 = Obj_ListRotatedPoints[p2].Z;
+  S32 z3 = Obj_ListRotatedPoints[p3].Z;
+  
+  // Sign extend Z values from 16-bit to 32-bit
+  z1 = (z1 << 16) >> 16;
+  z2 = (z2 << 16) >> 16;
+  z3 = (z3 << 16) >> 16;
+  
+  // Add world Z position offset
+  z1 += PosZWr;
+  z2 += PosZWr;
+  z3 += PosZWr;
+  
+  // Calculate perspective correction factors
+  ListFillPoly[0].Pt_W = W_NORM / z1;
+  ListFillPoly[1].Pt_W = W_NORM / z2;
+  ListFillPoly[2].Pt_W = W_NORM / z3;
+  
+  // Call polygon fill function with perspective-corrected texture mapping
+  return Fill_Poly(typePoly, 0, 3, ListFillPoly);
 }
 
 S32 Quad_TextureZ_Solid(U32 typePoly, void *poly)

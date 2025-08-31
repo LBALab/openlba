@@ -820,9 +820,143 @@ S32 Filler_TextureZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 
 S32 Filler_TextureChromaKeyZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXT_PtrMapPatch = PtrMap;
+    POLYTEXT_DecMapU = (U32)Fill_MapU_XSlope << 16;
+    POLYTEXT_DecMapV = (U32)Fill_MapV_XSlope << 16;
+    POLYTEXT_RepMaskPatch = RepMask;
+    
+    // Integer increments for texture mapping
+    POLYTEXT_IntMapU = ((U32)Fill_MapU_XSlope >> 16) & 0xFF;
+    POLYTEXT_IntMapV = ((U32)Fill_MapV_XSlope >> 16) & 0xFF;
+    
+    // Z-buffer setup
+    POLYTEXT_PtrZBufferPatch = PtrZBuffer;
+    POLYTEXT_PtrZBuffer1 = PtrZBuffer;
+    POLYTEXT_DecZBuf = (U32)Fill_ZBuf_XSlope << 24;
+    POLYTEXT_IntZBuf = (U32)Fill_ZBuf_XSlope >> 8;
+    POLYTEXT_PtrLog = (PTR_U8)Log;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      U8 *line = (fillCurXMin >> 16) + Fill_CurOffLine;
+
+      // Adjust for sub-pixel start position
+      U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
+      if (fillWidth > 16)
+      {
+        S32 uAdjust = Fill_MapU_XSlope * factor;
+        u += (uAdjust >> 16);
+        
+        S32 vAdjust = Fill_MapV_XSlope * factor;
+        v += (vAdjust >> 16);
+
+        // Cache line preloading for performance
+        U8 *cacheStart = (U8 *)((uintptr_t)line & ~31);
+        U8 *cacheEnd = (U8 *)(((uintptr_t)line + fillWidth + 31) & ~31);
+        for (U8 *cache = cacheStart; cache <= cacheEnd; cache += 32)
+        {
+          volatile U8 dummy = *cache;
+          (void)dummy;
+        }
+      }
+
+      // Prepare texture coordinates and Z-buffer values
+      U32 mapU = (u >> 16) & 0xFF;
+      U32 mapV = (v & 0xFF0000) >> 8;
+      U32 mapAddr = (mapU | mapV) & RepMask;
+      
+      U32 decMapU = u << 16;
+      U32 decMapV = v << 16;
+      
+      // Convert line pointer to offset for Z-buffer operations
+      U32 offset = line - (U8 *)Log;
+      
+      // Z-buffer values: split Fill_CurZBufMin into integer and fractional parts
+      U32 zBufFrac = Fill_CurZBufMin << 24;  // Fractional part
+      U32 zBufInt = Fill_CurZBufMin >> 8;    // Integer part
+
+      // Process each pixel with chroma key and Z-buffer testing/writing
+      for (U32 i = 0; i < fillWidth; i++)
+      {
+        // Z-buffer test
+        if (POLYTEXT_PtrZBufferPatch[offset + i] <= (U16)zBufInt)
+        {
+          // Update Z-buffer
+          POLYTEXT_PtrZBuffer1[offset + i] = (U16)zBufInt;
+          
+          // Sample texture
+          U8 texel = POLYTEXT_PtrMapPatch[mapAddr];
+          
+          // Chroma key test: only draw if texel is not 0 (transparent)
+          if (texel != 0)
+          {
+            POLYTEXT_PtrLog[offset + i] = texel;
+          }
+        }
+        
+        // Update texture coordinates
+        decMapU += POLYTEXT_DecMapU;
+        mapU += (decMapU < POLYTEXT_DecMapU) ? POLYTEXT_IntMapU + 1 : POLYTEXT_IntMapU;
+        
+        decMapV += POLYTEXT_DecMapV;
+        mapV += (decMapV < POLYTEXT_DecMapV) ? POLYTEXT_IntMapV : 0;
+        
+        mapAddr = (mapU & 0xFF) | (mapV & 0xFF00);
+        mapAddr &= POLYTEXT_RepMaskPatch;
+        
+        // Update Z-buffer values for interpolation
+        zBufFrac += POLYTEXT_DecZBuf;
+        zBufInt += POLYTEXT_IntZBuf;
+        if (zBufFrac < POLYTEXT_DecZBuf)  // Carry detection
+        {
+          zBufInt++;
+        }
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 // Verified
