@@ -13,6 +13,7 @@ extern volatile U32 TimerSystemHR;
 extern volatile U32 TimerRefHR;
 extern volatile S32 CmptFrame;        ///< Frame count
 extern volatile S32 NbFramePerSecond; ///< FPS - Frames per second
+extern volatile S32 CmptMemoTimerRef;
 
 // --- Initialization ----------------------------------------------------------
 void InitTimer();

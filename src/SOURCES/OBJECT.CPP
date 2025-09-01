@@ -424,7 +424,6 @@ void InitObject(U8 numobj)
     ptrobj->SampleAlways = 0;
 }
 
-
 void StartInitObj(U8 numobj)
 {
     T_OBJET *ptrobj;
@@ -510,7 +509,6 @@ void StartInitObj(U8 numobj)
     ptrobj->SampleAlways = 0;
 }
 
-
 void StartInitAllObjs()
 {
     U8 n;
@@ -577,7 +575,6 @@ void LoadFicPerso()
 
     ptrobj->PtrAnimAction = SearchPtrAnimAction;
 }
-
 
 void InitPerso()
 {
@@ -1644,7 +1641,6 @@ void FoudroieObj(U8 numhitter, U8 num, S32 armure)
     }
 }
 
-
 S32 CheckZvOnZv(U8 numobj, U8 numobjt)
 {
     T_OBJET *ptrobj;
@@ -1685,7 +1681,6 @@ S32 CheckZvOnZv(U8 numobj, U8 numobjt)
 
     return FALSE;
 }
-
 
 S32 CheckObjCol(U8 numobj)
 {
@@ -2071,7 +2066,6 @@ S32 CheckObjCol(U8 numobj)
     return ptrobj->ObjCol;
 }
 
-
 U8 IsObjCol(U8 numobj)
 {
     T_OBJET *ptrobj;
@@ -2122,7 +2116,6 @@ U8 IsObjCol(U8 numobj)
     return FALSE;
 }
 
-
 void CheckCarrier(U8 numobj)
 {
     U8 n;
@@ -2140,7 +2133,6 @@ void CheckCarrier(U8 numobj)
         }
     }
 }
-
 
 S32 CheckValidObjPos(U8 numobj, U8 owner)
 {
@@ -2506,7 +2498,6 @@ void InitBody(U8 gennewbody,
         ptrobj->ZMax = 0;
     }
 }
-
 
 void InitSprite(S32 newsprite,
                 T_OBJET *ptrobj)
@@ -3226,7 +3217,6 @@ S32 CheckCarryBy(U8 numobj)
     return validepos;
 }
 
-
 S32 GereCodesJeu(U8 numobj)
 {
     S32 validepos = TRUE;
@@ -3461,7 +3451,6 @@ S32 GereCodesJeu(U8 numobj)
 
     return validepos;
 }
-
 
 void GereObjAnim(U8 numobj)
 {
@@ -3727,7 +3716,6 @@ static void DoAnimSprite3D()
     }
 }
 
-
 void DoAnim(U8 numobj)
 {
     T_OBJET *ptrobj;
@@ -3751,24 +3739,20 @@ void DoAnim(U8 numobj)
     else
         validepos = FALSE;
 
-
     /* gestion DEP OBJET SPRITE */
 
     if (APtObj->Flags & SPRITE_3D)
         DoAnimSprite3D();
-
 
     /* gestion anim/DEP OBJET 3D */
 
     else /* pas SPRITE_3D donc obj articulés (Avez Vous Donc Une Ame? ;)*/
         GereObjAnim(numobj);
 
-
     // Gestion des WAGONS
 
     if (APtObj->Move == MOVE_WAGON)
         DoAnimWagon();
-
 
     // pour tous obj/sprite 3d
 
@@ -3777,7 +3761,6 @@ void DoAnim(U8 numobj)
     {
         validepos = FALSE;
     }
-
 
     // je tombe
 
@@ -3791,14 +3774,12 @@ void DoAnim(U8 numobj)
         validepos = FALSE;
     }
 
-
     /* test CodeJeu Water, Electric And Roller  */
 
     //------------- Gestion des CodeJeu
 
     if (!GereCodesJeu(numobj))
         validepos = FALSE;
-
 
     /* test/reajuste pos */
     // ?	APtObj->ObjCol = -1 ;
@@ -4192,7 +4173,6 @@ void ManualRealAngle(T_OBJET *ptrobj)
         RestartMove(&ptrobj->BoundAngle.Move);
     }
 }
-
 
 void ClearRealAngle(T_OBJET *ptrobj)
 {
@@ -5103,7 +5083,6 @@ void DoDir(U8 numobj)
         }
         break;
     }
-
 }
 
 /*══════════════════════════════════════════════════════════════════════════*
@@ -5841,7 +5820,6 @@ void AffNbFps(void)
         UnsetClip();
     }
 }
-
 
 void AffScene(S32 flagflip)
 {
