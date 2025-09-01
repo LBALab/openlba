@@ -61,6 +61,7 @@ S32 Filler_TextureGouraud(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
     GTEX_IntMapU = (Fill_MapU_XSlope >> 16) & 0xFF;
     GTEX_IntMapV = (Fill_MapV_XSlope >> 16) & 0xFF;
     GTEX_DecMapV_Gour = (Fill_MapV_XSlope << 16) | ((Fill_Gouraud_XSlope >> 8) & 0xFFFF);
+    GTEX_RepMaskPatch = RepMask;
   }
   else
   {
@@ -87,29 +88,15 @@ S32 Filler_TextureGouraud(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
       U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
       if (diffX > 16)
       {
-        U64 addGouraud = ((U64)factor * (U64)Fill_Gouraud_XSlope);
-        U32 addGouraudDec = (U32)(addGouraud >> 32);
-        U32 addGouraudInt = (U32)(addGouraud & 0xFFFFFFFF);
-        addGouraudDec = addGouraudDec << 16;
-        addGouraudInt = addGouraudInt >> 16;
-        addGouraudDec |= addGouraudInt;
-        curGouraudMin += addGouraudDec;
+        // Simple multiply for sub-pixel adjustment, matching assembly imul instruction
+        S32 addGouraud = ((S32)factor * (S32)Fill_Gouraud_XSlope) >> 16;
+        curGouraudMin += addGouraud;
 
-        U64 addU = ((U64)factor * (U64)Fill_MapU_XSlope);
-        U32 addUDec = (U32)(addU >> 32);
-        U32 addUInt = (U32)(addU & 0xFFFFFFFF);
-        addUDec = addUDec << 16;
-        addUInt = addUInt >> 16;
-        addUDec |= addUInt;
-        lineU += addUDec;
+        S32 addU = ((S32)factor * (S32)Fill_MapU_XSlope) >> 16;
+        lineU += addU;
 
-        U64 addV = ((U64)factor * (U64)Fill_MapV_XSlope);
-        U32 addVDec = (U32)(addV >> 32);
-        U32 addVInt = (U32)(addV & 0xFFFFFFFF);
-        addVDec = addVDec << 16;
-        addVInt = addVInt >> 16;
-        addVInt |= addVDec;
-        lineV += addVInt;
+        S32 addV = ((S32)factor * (S32)Fill_MapV_XSlope) >> 16;
+        lineV += addV;
 
         // There was some @@Preload code here, but it did nothing other
         // than reading some bytes but not doing anything with it. It
@@ -129,11 +116,11 @@ S32 Filler_TextureGouraud(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
       {
         colorIndex = (colorIndex & 0xFFFFFF00) | GTEX_PtrMapPatch[mask];
 
-        U8 carry = ((U64)decU + (U64)GTEX_DecMapU) > 0xFFFFFFFF;
+        U8 carry = (decU > (0xFFFFFFFF - GTEX_DecMapU));
         decU += GTEX_DecMapU;
         mask = (mask & 0xFFFFFF00) | (((GTEX_IntMapU & 0xFF) + carry + (mask & 0xFF)) & 0xFF);
 
-        carry = ((U64)decV + (U64)GTEX_DecMapV_Gour) > 0xFFFFFFFF;
+        carry = (decV > (0xFFFFFFFF - GTEX_DecMapV_Gour));
         decV += GTEX_DecMapV_Gour;
         mask = (mask & 0xFFFF00FF) | (((((mask >> 8) & 0xFF) + (GTEX_IntMapV & 0xFF) + carry) & 0xFF) << 8);
 
@@ -251,11 +238,11 @@ S32 Filler_TextureDither(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
       {
         colorIndex = (colorIndex & 0xFFFFFF00) | GTEX_PtrMapPatch[mask];
 
-        U8 carry = ((U64)decU + (U64)GTEX_DecMapU) > 0xFFFFFFFF;
+        U8 carry = (decU > (0xFFFFFFFF - GTEX_DecMapU));
         decU += GTEX_DecMapU;
         mask = (mask & 0xFFFFFF00) | (((GTEX_IntMapU & 0xFF) + carry + (mask & 0xFF)) & 0xFF);
 
-        carry = ((U64)decV_gour + (U64)GTEX_DecMapV_Gour) > 0xFFFFFFFF;
+        carry = (decV_gour > (0xFFFFFFFF - GTEX_DecMapV_Gour));
         decV_gour += GTEX_DecMapV_Gour;
         mask = (mask & 0xFFFF00FF) | (((((mask >> 8) & 0xFF) + (GTEX_IntMapV & 0xFF) + carry) & 0xFF) << 8);
 

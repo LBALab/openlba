@@ -77,21 +77,12 @@ S32 Filler_Texture(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
       U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
       if (fillWidth > 16)
       {
-        U64 addU = ((U64)factor * (U64)Fill_MapU_XSlope);
-        U32 addUDec = (U32)(addU >> 32);
-        U32 addUInt = (U32)(addU & 0xFFFFFFFF);
-        addUDec = addUDec << 16;
-        addUInt = addUInt >> 16;
-        addUDec |= addUInt;
-        lineU += addUDec;
+        // Simple multiply for sub-pixel adjustment, matching assembly imul instruction
+        S32 addU = ((S32)factor * (S32)Fill_MapU_XSlope) >> 16;
+        lineU += addU;
 
-        U64 addV = ((U64)factor * (U64)Fill_MapV_XSlope);
-        U32 addVDec = (U32)(addV >> 32);
-        U32 addVInt = (U32)(addV & 0xFFFFFFFF);
-        addVDec = addVDec << 16;
-        addVInt = addVInt >> 16;
-        addVInt |= addVDec;
-        lineV += addVInt;
+        S32 addV = ((S32)factor * (S32)Fill_MapV_XSlope) >> 16;
+        lineV += addV;
 
         // There was some @@Preload code here, but it did nothing other
         // than reading some bytes but not doing anything with it. It
@@ -106,17 +97,17 @@ S32 Filler_Texture(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
       do
       {
         // @@Each_X:
-        lineUDec = (lineUDec & 0xFFFFFF00) | PtrMap[mapIndex];
+        U8 texel = PtrMap[mapIndex];
 
-        U8 carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        U8 carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((((Precalc_Inc >> 8) & 0xFF) + ((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
-        carry = ((U64)lineUDec + (U64)POLYTEXT_DecMapU) > 0xFFFFFFFF;
+        carry = (lineUDec > (0xFFFFFFFF - POLYTEXT_DecMapU));
         lineUDec += POLYTEXT_DecMapU;
         mapIndex = (mapIndex & 0xFFFFFF00) | (((Precalc_Inc & 0xFF) + (mapIndex & 0xFF) + carry) & 0xFF);
 
-        *line = lineUDec & 0xFF;
+        *line = texel;
         line++;
 
         mapIndex &= POLYTEXT_RepMaskPatch;
@@ -188,21 +179,12 @@ S32 Filler_TextureChromaKey(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
       U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
       if (fillWidth > 16)
       {
-        U64 addU = ((U64)factor * (U64)Fill_MapU_XSlope);
-        U32 addUDec = (U32)(addU >> 32);
-        U32 addUInt = (U32)(addU & 0xFFFFFFFF);
-        addUDec = addUDec << 16;
-        addUInt = addUInt >> 16;
-        addUDec |= addUInt;
-        lineU += addUDec;
+        // Simple multiply for sub-pixel adjustment, matching assembly imul instruction
+        S32 addU = ((S32)factor * (S32)Fill_MapU_XSlope) >> 16;
+        lineU += addU;
 
-        U64 addV = ((U64)factor * (U64)Fill_MapV_XSlope);
-        U32 addVDec = (U32)(addV >> 32);
-        U32 addVInt = (U32)(addV & 0xFFFFFFFF);
-        addVDec = addVDec << 16;
-        addVInt = addVInt >> 16;
-        addVInt |= addVDec;
-        lineV += addVInt;
+        S32 addV = ((S32)factor * (S32)Fill_MapV_XSlope) >> 16;
+        lineV += addV;
       }
       // @@FastInit:
       U32 lineVDec = lineV << 16; // ebp
@@ -213,11 +195,11 @@ S32 Filler_TextureChromaKey(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
         // @@Each_X:
         U8 texel = POLYTEXT_PtrMapPatch[mapIndex];
 
-        U8 carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        U8 carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((((Precalc_Inc >> 8) & 0xFF) + ((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
-        carry = ((U64)lineUDec + (U64)POLYTEXT_DecMapU) > 0xFFFFFFFF;
+        carry = (lineUDec > (0xFFFFFFFF - POLYTEXT_DecMapU));
         lineUDec += POLYTEXT_DecMapU;
         mapIndex = (mapIndex & 0xFFFFFF00) | (((Precalc_Inc & 0xFF) + (mapIndex & 0xFF) + carry) & 0xFF);
 
@@ -297,21 +279,11 @@ S32 Filler_TextureFlat(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
       U32 factor = (fillCurXMin & 0xFFFF) ^ 0xFFFF;
       if (fillWidth > 16)
       {
-        U64 addU = ((U64)factor * (U64)Fill_MapU_XSlope);
-        U32 addUHigh = (U32)(addU >> 32);
-        U32 addULow = (U32)(addU & 0xFFFFFFFF);
-        addUHigh = addUHigh << 16;
-        addULow = addULow >> 16;
-        addUHigh |= addULow;
-        lineU += addUHigh;
+        U32 addU = factor * Fill_MapU_XSlope >> 16;
+        lineU += addU;
 
-        U64 addV = ((U64)factor * (U64)Fill_MapV_XSlope);
-        U32 addVHigh = (U32)(addV >> 32);
-        U32 addVLow = (U32)(addV & 0xFFFFFFFF);
-        addVHigh = addVHigh << 16;
-        addVLow = addVLow >> 16;
-        addVLow |= addVHigh;
-        lineV += addVLow;
+        U32 addV = factor * Fill_MapV_XSlope >> 16;
+        lineV += addV;
 
         // @@Preload - cache preloading (omitted)
       }
@@ -327,11 +299,11 @@ S32 Filler_TextureFlat(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
         // @@Each_X:
         U8 texel = POLYTEXT_PtrMapPatch[mapIndex];
 
-        U8 carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        U8 carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((((Precalc_Inc >> 8) & 0xFF) + ((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
-        carry = ((U64)lineUDec + (U64)POLYTEXT_DecMapU) > 0xFFFFFFFF;
+        carry = (lineUDec > (0xFFFFFFFF - POLYTEXT_DecMapU));
         lineUDec += POLYTEXT_DecMapU;
         mapIndex = (mapIndex & 0xFFFFFF00) | (((Precalc_Inc & 0xFF) + (mapIndex & 0xFF) + carry) & 0xFF);
 
@@ -437,11 +409,11 @@ S32 Filler_TextureFlatChromaKey(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
         // @@Each_X:
         U8 texel = POLYTEXT_PtrMapPatch[mapIndex];
 
-        U8 carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        U8 carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((((Precalc_Inc >> 8) & 0xFF) + ((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
-        carry = ((U64)lineUDec + (U64)POLYTEXT_DecMapU) > 0xFFFFFFFF;
+        carry = (lineUDec > (0xFFFFFFFF - POLYTEXT_DecMapU));
         lineUDec += POLYTEXT_DecMapU;
         mapIndex = (mapIndex & 0xFFFFFF00) | (((Precalc_Inc & 0xFF) + (mapIndex & 0xFF) + carry) & 0xFF);
 
@@ -547,11 +519,11 @@ S32 Filler_TextureFog(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
         U8 foggedColor = Fill_Logical_Palette[textureColor];
         *line = foggedColor;
 
-        U8 carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        U8 carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((((Precalc_Inc >> 8) & 0xFF) + ((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
-        carry = ((U64)lineUDec + (U64)POLYTEXT_DecMapU) > 0xFFFFFFFF;
+        carry = (lineUDec > (0xFFFFFFFF - POLYTEXT_DecMapU));
         lineUDec += POLYTEXT_DecMapU;
         mapIndex = (mapIndex & 0xFFFFFF00) | (((Precalc_Inc & 0xFF) + (mapIndex & 0xFF) + carry) & 0xFF);
 
@@ -652,11 +624,11 @@ S32 Filler_TextureChromaKeyFog(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
           *line = foggedColor;
         }
 
-        U8 carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        U8 carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((((Precalc_Inc >> 8) & 0xFF) + ((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
-        carry = ((U64)lineUDec + (U64)POLYTEXT_DecMapU) > 0xFFFFFFFF;
+        carry = (lineUDec > (0xFFFFFFFF - POLYTEXT_DecMapU));
         lineUDec += POLYTEXT_DecMapU;
         mapIndex = (mapIndex & 0xFFFFFF00) | (((Precalc_Inc & 0xFF) + (mapIndex & 0xFF) + carry) & 0xFF);
 
@@ -777,15 +749,15 @@ S32 Filler_TextureZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 
         offset++;
 
-        U8 carry = ((U64)incDecMapU + (U64)POLYTEXT_DecMapU) > 0xFFFFFFFF;
+        U8 carry = (incDecMapU > (0xFFFFFFFF - POLYTEXT_DecMapU));
         incDecMapU += POLYTEXT_DecMapU;
         mapIndex = (mapIndex & 0xFFFFFF00) | (((POLYTEXT_IntMapU & 0xFF) + (mapIndex & 0xFF) + carry) & 0xFF);
 
-        carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | ((((incDecMapU >> 8) & 0xFF) + (((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
-        carry = ((U64)zDec + (U64)POLYTEXT_DecZBuf) > 0xFFFFFFFF;
+        carry = (zDec > (0xFFFFFFFF - POLYTEXT_DecZBuf));
         zDec += POLYTEXT_DecZBuf;
         zInt += POLYTEXT_IntZBuf + carry;
 
@@ -1045,16 +1017,16 @@ S32 Filler_TextureFlatZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
           POLYTEXT_PtrLog[offset] = POLYTEXT_PtrCLUT[colorIndex];
         }
 
-        U8 carry = ((U64)zDec + (U64)POLYTEXT_DecZBuf) > 0xFFFFFFFF;
+        U8 carry = (zDec > (0xFFFFFFFF - POLYTEXT_DecZBuf));
         zDec += POLYTEXT_DecZBuf;
-        U8 carry2 = ((U64)decU_intZ + (U64)POLYTEXT_DecMapUIntZBuf + (U64)carry) > 0xFFFFFFFF;
+        U8 carry2 = (decU_intZ > (0xFFFFFFFF - POLYTEXT_DecMapUIntZBuf - carry));
         decU_intZ += POLYTEXT_DecMapUIntZBuf + carry;
 
         offset++;
 
         mapIndex = (mapIndex & 0xFFFFFF00) | (((POLYTEXT_IntMapU & 0xFF) + (mapIndex & 0xFF) + carry2) & 0xFF);
 
-        carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((POLYTEXT_IntMapV & 0xFF) + (((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
@@ -1176,16 +1148,16 @@ S32 Filler_TextureFlatChromaKeyZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMa
           }
         }
 
-        U8 carry = ((U64)zDec + (U64)POLYTEXT_DecZBuf) > 0xFFFFFFFF;
+        U8 carry = (zDec > (0xFFFFFFFF - POLYTEXT_DecZBuf));
         zDec += POLYTEXT_DecZBuf;
-        U8 carry2 = ((U64)decU_intZ + (U64)POLYTEXT_DecMapUIntZBuf + (U64)carry) > 0xFFFFFFFF;
+        U8 carry2 = (decU_intZ > (0xFFFFFFFF - POLYTEXT_DecMapUIntZBuf - carry));
         decU_intZ += POLYTEXT_DecMapUIntZBuf + carry;
 
         offset++;
 
         mapIndex = (mapIndex & 0xFFFFFF00) | (((POLYTEXT_IntMapU & 0xFF) + (mapIndex & 0xFF) + carry2) & 0xFF);
 
-        carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((POLYTEXT_IntMapV & 0xFF) + (((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
@@ -1305,13 +1277,13 @@ S32 Filler_TextureFogZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 
         offset++;
 
-        U8 carry = ((U64)decZ + (U64)POLYTEXT_DecZBuf) > 0xFFFFFFFF;
+        U8 carry = (decZ > (0xFFFFFFFF - POLYTEXT_DecZBuf));
         decZ += POLYTEXT_DecZBuf;
-        U8 carry2 = ((U64)decU_intZ + (U64)POLYTEXT_DecMapUIntZBuf + carry) > 0xFFFFFFFF;
+        U8 carry2 = (decU_intZ > (0xFFFFFFFF - POLYTEXT_DecMapUIntZBuf - carry));
         decU_intZ += POLYTEXT_DecMapUIntZBuf + carry;
         mapIndex = (mapIndex & 0xFFFFFF00) | (((POLYTEXT_IntMapU & 0xFF) + (mapIndex & 0xFF) + carry2) & 0xFF);
 
-        carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((POLYTEXT_IntMapV & 0xFF) + (((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 
@@ -1431,16 +1403,16 @@ S32 Filler_TextureChromaKeyFogZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax
         }
 
         // @@NoDisp:
-        U8 carry = ((U64)decZ + (U64)POLYTEXT_DecZBuf) > 0xFFFFFFFF;
+        U8 carry = (decZ > (0xFFFFFFFF - POLYTEXT_DecZBuf));
         decZ += POLYTEXT_DecZBuf;
-        U8 carry2 = ((U64)decU_intZ + (U64)POLYTEXT_DecMapUIntZBuf + (U64)carry) > 0xFFFFFFFF;
+        U8 carry2 = (decU_intZ > (0xFFFFFFFF - POLYTEXT_DecMapUIntZBuf - carry));
         decU_intZ += POLYTEXT_DecMapUIntZBuf + carry;
 
         offset++;
 
         mapIndex = (mapIndex & 0xFFFFFF00) | (((POLYTEXT_IntMapU & 0xFF) + (mapIndex & 0xFF) + carry2) & 0xFF);
 
-        carry = ((U64)lineVDec + (U64)POLYTEXT_DecMapV) > 0xFFFFFFFF;
+        carry = (lineVDec > (0xFFFFFFFF - POLYTEXT_DecMapV));
         lineVDec += POLYTEXT_DecMapV;
         mapIndex = (mapIndex & 0xFFFF00FF) | (((POLYTEXT_IntMapV & 0xFF) + (((mapIndex >> 8) & 0xFF) + carry) & 0xFF) << 8);
 

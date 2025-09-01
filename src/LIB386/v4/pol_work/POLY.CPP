@@ -105,7 +105,7 @@ S32 Fill_Trame_Parity = 0;  ///< Parity for trame polygons
 Fill_Jump_Fn *Fill_Saut_Normal = Fill_N_Table_Jumps; // Filler table
 
 // -----------------------------------------------------------------------------
-S32 INV64(S32 a) { return LONG_MIN / a; }
+S32 INV64(S32 a) { return (S32)((1LL << 32) / a); }
 
 S32 Read_Next_Right(Struc_Point *PtA, Struc_Point *PtB);
 
@@ -283,7 +283,7 @@ void SetFog(S32 z_near, S32 z_far)
     Fill_Z_Fog_Near = z_near;
     Fill_Z_Fog_Far = z_far;
 
-    Fill_ZBuffer_Factor = 0x100000000 / z_far;
+    Fill_ZBuffer_Factor = (U32)((1ULL << 32) / z_far);
     Fill_ScaledFogNear = (Fill_Z_Fog_Near * Fill_ZBuffer_Factor) >> 16;
 
     U32 temp = 65535 - Fill_ScaledFogNear;
