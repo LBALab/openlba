@@ -87,9 +87,9 @@ S32	FlagBlackPal = FALSE ;
 
 S32	FlagShadeMenu = FALSE ;
 
-#ifdef	DEBUG_TOOLS
+// #ifdef	DEBUG_TOOLS
 S32	DrawZVObjets = FALSE ;
-#endif
+// #endif
 
 char	PathFla[ADELINE_MAX_PATH] ;
 

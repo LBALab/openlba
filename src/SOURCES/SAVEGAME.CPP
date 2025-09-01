@@ -3,7 +3,6 @@
 	     ▀▀▀▀█ ██▀▀█ ██ ▄▀ ██▀▀        ██ ▀█ ██▀▀█ ██▀ █ ██▀▀
 	     ▀▀▀▀▀ ▀▀  ▀ ▀▀▀   ▀▀▀▀▀       ▀▀▀▀▀ ▀▀  ▀ ▀▀  ▀ ▀▀▀▀▀
  *══════════════════════════════════════════════════════════════════════════*/
-/*──────────────────────────────────────────────────────────────────────────*/
 
 #include 	"C_EXTERN.H"
 
@@ -78,7 +77,6 @@ char	*ListDemoSave[NB_DEMOSAVE] = {
 #define	LbaWriteLong(val)	*(S32*)PtrSave = val ;\
 				PtrSave += 4 ;
 
-/*──────────────────────────────────────────────────────────────────────────*/
 // Resultat pas terrible
 #ifndef	EDITLBA2
 void	RemapPicture( U8 *buf, U32 size )
@@ -147,7 +145,6 @@ S32	SetDemoSaveGame( S32 num )
 	  ██  █  ██   ▀▀▀▀█ ██▀▄        ██▀▀  ██  █ ██▀██ ██    ▀▀▀▀█
 	  ▀▀▀▀   ▀▀   ▀▀▀▀▀ ▀▀  ▀       ▀▀    ▀▀▀▀▀ ▀▀  ▀ ▀▀▀▀▀ ▀▀▀▀▀
  *══════════════════════════════════════════════════════════════════════════*/
-/*──────────────────────────────────────────────────────────────────────────*/
 // Version Jeu uniquement
 void	AutoSaveGame()
 {
@@ -195,7 +192,6 @@ void	AutoSaveGame()
 #endif	// DEMO
 }
 
-/*──────────────────────────────────────────────────────────────────────────*/
 void	CurrentSaveGame()
 {
 	U8	memonumversion = NumVersion ;
@@ -241,7 +237,6 @@ void	CurrentSaveGame()
 }
 #endif	// EDITLBA2
 
-/*──────────────────────────────────────────────────────────────────────────*/
 void	SaveGame( S32 flagmess )
 {
 	U8	*sizeptr ;
@@ -356,7 +351,6 @@ void	SaveGame( S32 flagmess )
 				PtrSave = (U8*)Screen ;
 
 #ifndef	EDITLBA2
-/*──────────────────────────────────────────────────────────────────────────*/
 void	LoadGameNumCube( )
 {
 	U8	numversion ;
@@ -396,7 +390,6 @@ void	LoadGameNumCube( )
 	LbaRead( ListVarGame, MAX_VARS_GAME*sizeof(ListVarGame[0]) ) ;
 }
 
-/*──────────────────────────────────────────────────────────────────────────*/
 void	LoadGamePlayerName( )
 {
 	U8	wbyte ;
@@ -426,7 +419,6 @@ void	LoadGamePlayerName( )
 
 #define	NB_GAME_CHOICE	5
 
-/*──────────────────────────────────────────────────────────────────────────*/
 U8	*LoadGameScreen( )
 {
 	U8	wbyte ;
@@ -472,7 +464,6 @@ U8	*LoadGameScreen( )
 	return( PtrSave ) ;
 }
 
-/*──────────────────────────────────────────────────────────────────────────*/
 S32	LoadGame( void )
 {
 	U8	*ptr ;
@@ -556,7 +547,6 @@ S32	LoadGame( void )
 #endif
 }
 
-/*──────────────────────────────────────────────────────────────────────────*/
 S32	LoadGameOldVersion( void )
 {
 	T_INV_OBJ	*ptri ;
@@ -699,7 +689,6 @@ S32	LoadGameOldVersion( void )
 	return TRUE ;
 }
 
-/*──────────────────────────────────────────────────────────────────────────*/
 // Sauvegarde de l'etat du jeu dans PtrSave
 void	SaveContexte( S32 savetimerrefhr )
 {
@@ -1073,7 +1062,6 @@ void	SaveContexte( S32 savetimerrefhr )
 	LbaWriteLong( VueCamera ) ;
 }
 
-/*──────────────────────────────────────────────────────────────────────────*/
 // Chargement d'une partie se trouvant dans PtrSave
 S32	LoadContexte( S32 *savetimerrefhr )
 {
