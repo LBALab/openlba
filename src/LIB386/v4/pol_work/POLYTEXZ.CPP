@@ -18,7 +18,6 @@
 #include <POLYGON/POLYTEXZ.H>
 
 #include <stdio.h>
-#include <stack>
 
 #include <FILLER.H>
 #include <POLYGON/POLY.H>
@@ -38,8 +37,44 @@ U32 POLYTEXZ_DecZBuf2 = 0x12345678;
 U32 POLYTEXZ_IntZBuf = 0x12345678;
 U32 POLYTEXZ_IntZBuf2 = 0x12345678;
 
-std::stack<S32> PerspectiveWStack = std::stack<S32>();
+// Simple C-style stack implementation for perspective W values
+#define MAX_PERSPECTIVE_STACK_SIZE 128
+typedef struct {
+    S32 data[MAX_PERSPECTIVE_STACK_SIZE];
+    U32 top_index;
+} PerspectiveWStack_t;
+
+static PerspectiveWStack_t PerspectiveWStack = {{0}, 0};
 double PerspectiveInvW = 0.0;
+
+// Stack operations
+static void PerspectiveWStack_clear(void) {
+    PerspectiveWStack.top_index = 0;
+}
+
+static void PerspectiveWStack_push(S32 value) {
+    if (PerspectiveWStack.top_index < MAX_PERSPECTIVE_STACK_SIZE) {
+        PerspectiveWStack.data[PerspectiveWStack.top_index] = value;
+        PerspectiveWStack.top_index++;
+    }
+}
+
+static S32 PerspectiveWStack_top(void) {
+    if (PerspectiveWStack.top_index > 0) {
+        return PerspectiveWStack.data[PerspectiveWStack.top_index - 1];
+    }
+    return 0; // Default value if stack is empty
+}
+
+static void PerspectiveWStack_pop(void) {
+    if (PerspectiveWStack.top_index > 0) {
+        PerspectiveWStack.top_index--;
+    }
+}
+
+static U32 PerspectiveWStack_size(void) {
+    return PerspectiveWStack.top_index;
+}
 
 // ╔═════════════════════════════════════════════════════════════╗
 // ║ Initialize the gradiants of a scanline                      ║
@@ -63,7 +98,7 @@ void Fill_Init_Perspective(S32 lineU, S32 lineV, U32 fillWidth)
 
   // Here, we precalc an array in the stack. This array
   // contains valid Cur_W values
-  PerspectiveWStack = std::stack<S32>();
+  PerspectiveWStack_clear();
   U32 stackLength = fillWidth + PERSP_VALUE - 1;
   stackLength >>= PERSP_SHIFT;
 
@@ -78,11 +113,11 @@ void Fill_Init_Perspective(S32 lineU, S32 lineV, U32 fillWidth)
     }
 
     // @@Return_Error:
-    PerspectiveWStack.push(w);
-  } while (PerspectiveWStack.size() < stackLength);
+    PerspectiveWStack_push(w);
+  } while (PerspectiveWStack_size() < stackLength);
 
-  Fill_Cur_W = PerspectiveWStack.top();
-  PerspectiveWStack.pop();
+  Fill_Cur_W = PerspectiveWStack_top();
+  PerspectiveWStack_pop();
 
   Fill_Cur_MapU = ROUND((double)Fill_Cur_MapUOverW * PerspectiveInvW);
   Fill_Cur_MapV = ROUND((double)Fill_Cur_MapVOverW * PerspectiveInvW);
@@ -102,8 +137,8 @@ void Fill_Loop_Perspective(U32 fillWidth)
 
   if (fillWidth > PERSP_VALUE)
   {
-    Fill_Next_W = PerspectiveWStack.top();
-    PerspectiveWStack.pop();
+    Fill_Next_W = PerspectiveWStack_top();
+    PerspectiveWStack_pop();
     PerspectiveInvW = 256.0 / (double)Fill_Next_W;
   }
 }
@@ -2110,16 +2145,241 @@ S32 Filler_TextureZChromaKeyFogZBuf(U32 nbLines, U32 fillCurXMin, U32 fillCurXMa
 
 S32 Filler_TextureZNZW(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrZBufferPatch = PtrZBuffer;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_IntZBuf = (U32)Fill_ZBuf_XSlope >> 8;
+    POLYTEXZ_DecZBuf = (U32)Fill_ZBuf_XSlope << 24;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      PTR_U8 line = (PTR_U8)Fill_CurOffLine + (fillCurXMin >> 16);
+      PTR_U16 zBufLine = POLYTEXZ_PtrZBufferPatch + (fillCurXMin >> 16);
+      
+      // Initialize perspective correction for this scanline
+      Fill_Init_Perspective(u, v, fillWidth);
+      
+      U32 currentZBuf = Fill_CurZBuf;
+      
+      while (fillWidth > 0)
+      {
+        Fill_Loop_Perspective(fillWidth);
+        
+        // Calculate texture increments for this perspective chunk
+        S32 mapUInc = (Fill_Next_MapU - Fill_Cur_MapU) >> PERSP_SHIFT;
+        S32 mapVInc = (Fill_Next_MapV - Fill_Cur_MapV) >> PERSP_SHIFT;
+        U32 mapCoord = ((Fill_Cur_MapU & 0xFFFF) | ((Fill_Cur_MapV & 0xFFFF) << 16));
+        U32 mapInc = (mapUInc & 0xFFFF) | ((mapVInc & 0xFFFF) << 16);
+        
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+        
+        // Z-buffer increment per pixel
+        U32 zBufValue = currentZBuf >> 8;
+        
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          // Z-buffer test (NZW = No Z Write, only test)
+          if (zBufLine[i] >= zBufValue)
+          {
+            U32 texelAddr = ((mapCoord >> 16) & POLYTEXZ_RepMaskPatch);
+            U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+            line[i] = texel;
+          }
+          
+          mapCoord += mapInc;
+          currentZBuf += POLYTEXZ_DecZBuf;
+          zBufValue += POLYTEXZ_IntZBuf;
+        }
+
+        line += currentWidth;
+        zBufLine += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZChromaKeyNZW(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
 {
-  // TODO: Implement ASM
-  printf("ASM FUNCTION %s (%s:%d)\n", __func__, __FILE__, __LINE__);
-  return 0;
+  U32 diffY = nbLines + 1;
+  Fill_CurY += diffY;
+  S32 u = Fill_CurMapUMin;
+  S32 v = Fill_CurMapVMin;
+  U32 patch = Fill_Patch - 1;
+
+  if (patch == 0)
+  {
+    Fill_Patch = patch;
+
+    POLYTEXZ_PtrZBufferPatch = PtrZBuffer;
+    POLYTEXZ_PtrLog = (PTR_U8)Log;
+    POLYTEXZ_PtrMapPatch = PtrMap;
+    POLYTEXZ_IntZBuf = (U32)Fill_ZBuf_XSlope >> 8;
+    POLYTEXZ_DecZBuf = (U32)Fill_ZBuf_XSlope << 24;
+    POLYTEXZ_RepMaskPatch = RepMask;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+  else
+  {
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  while (1)
+  {
+    U32 fillWidth = (fillCurXMax >> 16) - (fillCurXMin >> 16);
+    if ((fillCurXMax >> 16) > (fillCurXMin >> 16))
+    {
+      PTR_U8 line = (PTR_U8)Fill_CurOffLine + (fillCurXMin >> 16);
+      PTR_U16 zBufLine = POLYTEXZ_PtrZBufferPatch + (fillCurXMin >> 16);
+      
+      // Initialize perspective correction for this scanline
+      Fill_Init_Perspective(u, v, fillWidth);
+      
+      U32 currentZBuf = Fill_CurZBuf;
+      
+      while (fillWidth > 0)
+      {
+        Fill_Loop_Perspective(fillWidth);
+        
+        // Calculate texture increments for this perspective chunk
+        S32 mapUInc = (Fill_Next_MapU - Fill_Cur_MapU) >> PERSP_SHIFT;
+        S32 mapVInc = (Fill_Next_MapV - Fill_Cur_MapV) >> PERSP_SHIFT;
+        U32 mapCoord = ((Fill_Cur_MapU & 0xFFFF) | ((Fill_Cur_MapV & 0xFFFF) << 16));
+        U32 mapInc = (mapUInc & 0xFFFF) | ((mapVInc & 0xFFFF) << 16);
+        
+        U32 currentWidth = (fillWidth > PERSP_VALUE) ? PERSP_VALUE : fillWidth;
+        
+        // Z-buffer increment per pixel
+        U32 zBufValue = currentZBuf >> 8;
+        
+        for (U32 i = 0; i < currentWidth; i++)
+        {
+          U32 texelAddr = ((mapCoord >> 16) & POLYTEXZ_RepMaskPatch);
+          U8 texel = POLYTEXZ_PtrMapPatch[texelAddr];
+          
+          // Chroma key test: only draw if texel is not 0 (transparent)
+          if (texel != 0)
+          {
+            // Z-buffer test (NZW = No Z Write, only test)
+            if (zBufLine[i] >= zBufValue)
+            {
+              line[i] = texel;
+            }
+          }
+          
+          mapCoord += mapInc;
+          currentZBuf += POLYTEXZ_DecZBuf;
+          zBufValue += POLYTEXZ_IntZBuf;
+        }
+
+        line += currentWidth;
+        zBufLine += currentWidth;
+
+        if (fillWidth <= PERSP_VALUE)
+        {
+          break;
+        }
+
+        // Update perspective values for next chunk
+        Fill_Cur_MapU = Fill_Next_MapU;
+        Fill_Cur_MapV = Fill_Next_MapV;
+        Fill_Cur_MapUOverW = Fill_Next_MapUOverW;
+        Fill_Cur_MapVOverW = Fill_Next_MapVOverW;
+        Fill_Cur_W = Fill_Next_W;
+        fillWidth -= PERSP_VALUE;
+      }
+    }
+
+    diffY--;
+    if (diffY == 0)
+    {
+      break;
+    }
+
+    Fill_CurOffLine += ScreenPitch;
+    fillCurXMin += Fill_LeftSlope;
+    fillCurXMax += Fill_RightSlope;
+    u += Fill_MapU_LeftSlope;
+    v += Fill_MapV_LeftSlope;
+    Fill_CurWMin += Fill_W_LeftSlope;
+    Fill_CurZBufMin += Fill_ZBuf_LeftSlope;
+    Fill_CurZBuf = Fill_CurZBufMin;
+  }
+
+  Fill_CurXMin = fillCurXMin;
+  Fill_CurXMax = fillCurXMax;
+  Fill_CurMapUMin = u;
+  Fill_CurMapVMin = v;
+
+  return Triangle_ReadNextEdge(NULL, NULL);
 }
 
 S32 Filler_TextureZFlatNZW(U32 nbLines, U32 fillCurXMin, U32 fillCurXMax)
