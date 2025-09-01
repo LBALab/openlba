@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+U8 GameId;
 extern char *Version;
 
 extern T_OBJ_3D InvObjTwinsen[];
@@ -2153,7 +2154,7 @@ int main(int argc, char *argv[])
                 cd = TRUE;
         } while (!cd);
     }
-    FadeToBlack(PtrPalNormal);
+    // FadeToBlack(PtrPalNormal);
 
 #endif
 
@@ -2179,6 +2180,10 @@ int main(int argc, char *argv[])
     ColorFont(14);
 
     InitAcf();
+
+    GameId = SelectGameId();
+    FadeToBlack(PtrPalNormal);
+    printf("Selected LBA%d\n", GameId);
 
 #ifndef DEBUG_TOOLS
     //-------------------   logo adeline (affiche)

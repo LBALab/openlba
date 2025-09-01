@@ -1,5 +1,7 @@
 #include "DEFINES.H"
 
+extern U8 GameId; // 1 = LBA1, 2 = LBA2, 3 = TIMECO
+
 /*--------- divers ---------------------------------------------*/
 extern S32 BodyComportement;
 

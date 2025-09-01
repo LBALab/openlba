@@ -1405,7 +1405,12 @@ void    DrawOneChoice( S32 x, S32 y, S32 type, S32 num, S32 select )
         // text
 
         ColorFont( CoulTextMenu ) ;
-        GetMultiText( num, string ) ;
+        // TODO: remove once we add it to the TEXT.HQR
+        if (num == 9001 || num == 9002) {
+            snprintf(string, 256, "LBA %d", (num == 9001) ? 1 : 2);
+        }
+        else
+            GetMultiText( num, string ) ;
 
 //----------------------------------------------------------------------------
 	MemoClip()                      ;
@@ -3546,4 +3551,62 @@ void    Introduction( void )
 {
 	PlayAcf( "INTRO" ) ;
 	FlagPlayAcf = FALSE ;
+}
+
+/*──────────────────────────────────────────────────────────────────────────*/
+
+// Menu definition for Game ID selection
+U16 GameIdMenu[] = {
+    0,      // selected (initially select first option)
+    2,      // nb entries (2 options: LBA1 and LBA2)
+    370,    // y center (vertical position)
+    0,      // .dia num (dialog number, usually 0)
+
+    0, 9001, // LBA1 option (type 0 = normal text, message ID 9001)
+    0, 9002  // LBA2 option (type 0 = normal text, message ID 9002)
+};
+
+// Function to show Game ID selection menu
+S32 SelectGameId(void) {
+    S32 select;
+    S32 flag = 0;
+    S32 selectedGameId = 2;
+    char string[50];
+    S32 x = 384;
+    S32 y = 220;
+
+    InitPlasmaMenu();
+
+    CopyScreenResized((U8 *)Screen, (U8 *)Log, 0);
+    CopyScreen( Log, Screen ) ;
+
+    sprintf(string, "Select Game:");
+    ColorFont(BLACK);
+    Font( x - SizeFont( string )/2 + 3, y-18 + 3, string ) ;
+    ColorFont(LBAWHITE);
+    Font( x - SizeFont( string )/2, y-18, string ) ;
+
+    BoxStaticFullflip();
+    
+    // Main menu loop
+    while (!flag) {
+        select = DoGameMenu(GameIdMenu);
+        
+        switch (select) {
+            case 9001:   // LBA1 selected
+                selectedGameId = 1;
+                flag = 1;
+                break;
+                
+            case 1000:   // ESC pressed
+            case 9002:   // LBA2 selected
+                selectedGameId = 2;
+                flag = 1;
+                break;
+        }
+    }
+
+    WaitNoInput();
+    
+    return selectedGameId;
 }

@@ -94,5 +94,6 @@ extern void EffectPcxMess( U8 numpcx, U8 *screen, U8 effect, S32 mess ) ;
 /*--------------------------------------------------------------------------*/
 extern void Introduction( void ) ;
 /*--------------------------------------------------------------------------*/
+extern S32  SelectGameId( void ) ;
 
 #endif	// GAMEMENU_H
