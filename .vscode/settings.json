@@ -24,6 +24,10 @@
         "unordered_map": "cpp",
         "__locale": "cpp",
         "GRILLE.C": "cpp",
-        "*.def": "cpp"
+        "*.def": "cpp",
+        "AMBIANCE.C": "cpp",
+        "GERELIFE.C": "cpp",
+        "OBJECT.C": "cpp",
+        "PLAYFLA.C": "cpp"
     }
 }

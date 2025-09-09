@@ -2185,6 +2185,9 @@ int main(int argc, char *argv[])
     FadeToBlack(PtrPalNormal);
     printf("Selected LBA%d\n", GameId);
 
+    Cls();
+    BoxUpdate();
+
 #ifndef DEBUG_TOOLS
     //-------------------   logo adeline (affiche)
 
